@@ -1,0 +1,129 @@
+class StringDigestor {
+	constructor (config) {
+		this.codes = 'abcdefghijklmnipqrstuvwxyz'.split('').concat(config || DEFAULT_CONFIG).slice(0, 32);
+	}
+
+	set codes (code) {
+		this._code = code;
+		this.tests = code.map((code) => {
+			if (!tests[code]) {
+				console.log('cannot find test for code ', code);
+			} else {
+				return tests[code];
+			}
+		});
+	}
+
+	get codes () {
+		return this._code;
+	}
+
+	strToNum (pText) {
+		let text = pText.toLowerCase();
+		var flags = [];
+		for (let i = 0; i < this.codes.length; ++i) flags[i] = 0;
+		for (let t of text) {
+			for (let i = 0; i < 32; ++i) {
+				if (!flags[i]) {
+					flags[i] = this.tests[i](t, text);
+				}
+			}
+		}
+		var int = 0;
+		for (let i = 0; i < this.codes.length; ++i) {
+			if (flags[i]) {
+				int |= 1 << i;
+			}
+		}
+		//	console.log('string: ', pText);
+		//	console.log('flags: ', flags.map((v) => v ? 1 : 0).join(''));
+		//	console.log('int: ', int);
+
+		return int;
+	}
+
+	index (data, params) {
+		let dataToString = params.dataToString || ((w) => w);
+
+		return data.map((item) => {
+			let word = dataToString(item);
+			return {
+				item: item,
+				word: word,
+				index: this.strToNum(word)
+			};
+		});
+	}
+}
+
+StringDigestor.NONALPHANUM = 'NONALPHANUM';
+StringDigestor.NUMERIC = 'NUMERIC';
+StringDigestor.BRACES = 'BRACES';
+StringDigestor.PUNCTUATION = 'PUNCTUATION';
+StringDigestor.SPACE = 'SPACE';
+StringDigestor.LEAD1 = 'LEAD1';
+StringDigestor.LEAD2 = 'LEAD2';
+StringDigestor.LEAD3 = 'LEAD3+';
+StringDigestor.CAPS = 'CAPS';
+
+const tests = {
+	a: (t) => t.toLowerCase() === 'a',
+	b: (t) => t.toLowerCase() === 'b',
+	c: (t) => t.toLowerCase() === 'c',
+	d: (t) => t.toLowerCase() === 'd',
+	e: (t) => t.toLowerCase() === 'e',
+	f: (t) => t.toLowerCase() === 'f',
+	g: (t) => t.toLowerCase() === 'g',
+	h: (t) => t.toLowerCase() === 'h',
+	i: (t) => t.toLowerCase() === 'i',
+	j: (t) => t.toLowerCase() === 'j',
+	k: (t) => t.toLowerCase() === 'k',
+	l: (t) => t.toLowerCase() === 'l',
+	m: (t) => t.toLowerCase() === 'm',
+	n: (t) => t.toLowerCase() === 'n',
+	o: (t) => t.toLowerCase() === 'o',
+	p: (t) => t.toLowerCase() === 'p',
+	q: (t) => t.toLowerCase() === 'q',
+	r: (t) => t.toLowerCase() === 'r',
+	s: (t) => t.toLowerCase() === 's',
+	t: (t) => t.toLowerCase() === 't',
+	u: (t) => t.toLowerCase() === 'u',
+	v: (t) => t.toLowerCase() === 'v',
+	w: (t) => t.toLowerCase() === 'w',
+	x: (t) => t.toLowerCase() === 'x',
+	y: (t) => t.toLowerCase() === 'y',
+	z: (t) => t.toLowerCase() === 'z',
+	SPACE: (t) => t === ' '
+};
+
+var bre = /\{\}\[\]\(\)/
+tests[StringDigestor.BRACES] = (t) => bre.test(t);
+
+const nare = /\W/;
+const lead1re = /^1/;
+const lead1re2 = /[\D]+1/;
+const lead2re = /^1/;
+const lead2re2 = /[\D]+1/;
+const lead3re = /^[34567890]/;
+const lead3re2 = /[\D]+[34567890]/;
+const nre = /\d/;
+const pre = /[~!@#$%^&*()_+-=`\{\}\[\]:";'<>,./?\`\\\/]/;
+
+tests[StringDigestor.CAPS] = (t) => t.toLowerCase() != t;
+tests[StringDigestor.LEAD1] = (t, s) => lead1re.test(s) || lead1re2.test(s);
+tests[StringDigestor.LEAD2] = (t, s) => lead2re.test(s) || lead2re2.test(s);
+tests[StringDigestor.LEAD3] = (t, s) => lead3re.test(s) || lead3re2.test(s);
+tests[StringDigestor.NONALPHANUM] = (t) => nare.test(t);
+tests[StringDigestor.NUMERIC] = (t) => nre.test(t);
+tests[StringDigestor.PUNCTUATION] = (t) => pre.test(t);
+
+var DEFAULT_CONFIG = [
+	StringDigestor.NUMERIC,
+	StringDigestor.SPACE,
+	StringDigestor.LEAD1,
+	StringDigestor.LEAD2,
+	StringDigestor.LEAD3,
+	StringDigestor.NONALPHANUM
+];
+
+module.exports = StringDigestor;

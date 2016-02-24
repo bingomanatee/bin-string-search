@@ -1,0 +1,16 @@
+{
+  extends: "./setup/.globals.json",
+  "parser": "babel-eslint",
+  "rules": {
+    "strict": 0,
+    "quotes": [2, "single"],
+    "no-unused-expressions": 0,
+    "indent": [2,4]
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "mocha": true,
+    "es6": true
+  }
+}
