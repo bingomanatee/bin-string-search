@@ -48,6 +48,7 @@
     "gulp-util": "^3.0.7",
     "isparta": "^4.0.0",
     "json-loader": "^0.5.3",
+    "lodash": "^4.5.1",
     "mocha": "^2.4.5",
     "sinon": "^1.17.2",
     "sinon-chai": "^2.8.0",
@@ -58,5 +59,8 @@
   "babelBoilerplateOptions": {
     "entryFileName": "bin-string-search",
     "mainVarName": "binStringSearch"
+  },
+  "dependencies": {
+    "graceful-fs": "^4.1.3"
   }
 }
