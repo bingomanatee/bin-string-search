@@ -78,19 +78,11 @@ class StringDigestor {
 
 	index (data, pParams) {
 		let params = pParams || {};
-		let phraseIndex = params.phrase;
 		let dataToString = params.dataToString || _.identity;
 		var out = _(data).reduce((goodItems, item, i) => {
 			let word = dataToString(item);
 			if (_.trim(word).length) {
-				let index;
-
-				if (phraseIndex) {
-					word = ` ${phrasiphy(word)} `;
-					index = this.phraseToNums(word);
-				} else {
-					index = this.strToNum(word);
-				}
+				let index = this.strToNum(word);
 
 				let summary = {
 					word: word, order: i,
@@ -98,17 +90,11 @@ class StringDigestor {
 					item: item
 				};
 
-				if (phraseIndex) {
-					summary.maxIndex = _.max(index);
-					summary.minIndex = _.min(index);
-					summary.index = index.reduce((m, w) => m[w] = true, {});
-				}
-
 				goodItems.push(summary);
 			}
 			return goodItems;
 		}, []);
-		return _(out).sortBy(phraseIndex ? 'maxIndex' : 'index').reverse().value();
+		return _(out).sortBy('index').reverse().value();
 	}
 }
 

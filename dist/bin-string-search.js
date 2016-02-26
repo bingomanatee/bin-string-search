@@ -181,19 +181,11 @@ return /******/ (function(modules) { // webpackBootstrap
 				var _this = this;
 	
 				var params = pParams || {};
-				var phraseIndex = params.phrase;
 				var dataToString = params.dataToString || _.identity;
 				var out = _(data).reduce(function (goodItems, item, i) {
 					var word = dataToString(item);
 					if (_.trim(word).length) {
-						var index = undefined;
-	
-						if (phraseIndex) {
-							word = ' ' + phrasiphy(word) + ' ';
-							index = _this.phraseToNums(word);
-						} else {
-							index = _this.strToNum(word);
-						}
+						var index = _this.strToNum(word);
 	
 						var summary = {
 							word: word, order: i,
@@ -201,19 +193,11 @@ return /******/ (function(modules) { // webpackBootstrap
 							item: item
 						};
 	
-						if (phraseIndex) {
-							summary.maxIndex = _.max(index);
-							summary.minIndex = _.min(index);
-							summary.index = index.reduce(function (m, w) {
-								return m[w] = true;
-							}, {});
-						}
-	
 						goodItems.push(summary);
 					}
 					return goodItems;
 				}, []);
-				return _(out).sortBy(phraseIndex ? 'maxIndex' : 'index').reverse().value();
+				return _(out).sortBy('index').reverse().value();
 			}
 		}, {
 			key: 'codes',
