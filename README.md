@@ -3,7 +3,7 @@
 Search for strings in a collection in up to half the time by using a reductive index that creates a single integer that
 represents the set of characters in the search terms. 
 
-single word searches can take 1/5 to 3/4 the time of an unindexed string search.
+single word searches can take 1/6 to 3/4 the time of an unindexed string search; average times are around 1/3.
 
 ## How does it work?
 

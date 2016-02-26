@@ -8,11 +8,7 @@ describe('binStringSearch', () => {
 	describe('StringDigestor', () => {
 		let digestor;
 		before(() => {
-			digestor = new binStringSearch.StringDigestor();
-		});
-
-		it('should have the expected codes', () => {
-			expect(digestor.codes.join(',')).to.equal('a,b,c,d,e,f,g,h,i,j,k,l,m,n,i,p,q,r,s,t,u,v,w,x,y,z,NUMERIC,SPACE,PUNCTUATION,NONALPHANUM');
+			digestor = new binStringSearch.StringDigestor(null, 3);
 		});
 
 		describe('.strToNum', () => {
@@ -26,28 +22,6 @@ describe('binStringSearch', () => {
 
 			it('finds bce', function () {
 				expect(digestor.strToNum('bce')).to.equal(22);
-			});
-		});
-
-		describe('.index', () => {
-			let index;
-			before(() => {
-				index = digestor.index(['a', 'bce', 'bible'], {});
-			});
-
-			it('should index strings', () => {
-				expect(index).to.deep.equal([{
-							"item": "bible",
-							"word": "bible",
-							"order": 2,
-							"index": 18706
-						}, {"item": "bce", "word": "bce", "order": 1, "index": 22}, {
-							"item": "a",
-							"word": "a",
-							"order": 0,
-							"index": 1
-						}]
-				);
 			});
 		});
 
@@ -73,7 +47,7 @@ describe('binStringSearch', () => {
 						index: digestor.strToNum('rob'),
 						item: 'rob'
 					}
-				]
+				];
 				var bobs = digestor.find('bob', bobWords);
 				// console.log('bob words:', bobs);
 				expect(bobs).to.deep.equal([{word: 'bob', index: 2, item: 'bob'}]
@@ -103,31 +77,40 @@ describe('binStringSearch', () => {
 
 		describe('.find Large File', () => {
 			var warAndPeaceIndex;
+			var term = 'he';
+			let indexTime;
+			let heWordsNoIndex, heWords;
+			let noIndexTime;
 
 			before(function () {
 				this.timeout(10000);
 				var words = fs.readFileSync(__dirname + '/../warAndPeace.txt').toString().split(/[\W]+/);
-
 				warAndPeaceIndex = digestor.index(words, {})
 			});
 
-			it('finds the bobs in the dictionary', () => {
+			beforeEach(function () {
 				var time = new Date().getTime();
-				let heWords = digestor.find('he', warAndPeaceIndex);
+				heWords = digestor.find(term, warAndPeaceIndex);
 				var endTime = new Date().getTime();
 				// console.log('war and peace: ', warAndPeaceIndex.slice(0, 6));
 				// console.log('word with he in it', _words(heWords, 10));
-				const indexTime = endTime - time;
+				indexTime = endTime - time;
 				// console.log('time:', indexTime);
+			});
 
-				time = new Date().getTime();
-				var heWordsNoIndex = digestor.findWithoutIndex('he', warAndPeaceIndex);
-				endTime = new Date();
-				const noIndexTime = endTime - time;
+			beforeEach(function () {
+				let time = new Date().getTime();
+				heWordsNoIndex = digestor.findWithoutIndex(term, warAndPeaceIndex);
+				let endTime = new Date();
+				noIndexTime = endTime - time;
+			});
+
+			it('finds the ' + term + ' in the dictionary', () => {
+
 				// console.log('word with he in it (no index)', _words(heWordsNoIndex, 10));
 				// console.log('time:', noIndexTime);
 
-				expect(heWords).to.deep.equal(heWordsNoIndex);
+				expect(_.map(heWords, 'item')).to.deep.equal(_.map(heWordsNoIndex, 'item'));
 				expect(indexTime).to.be.below(noIndexTime);
 			});
 		});
@@ -152,7 +135,7 @@ describe('binStringSearch', () => {
 
 				stream.on('end', () => {
 					var t = new Date().getTime() - s;
-					// console.log('indexed War and Peace in ', t / 1000, 'seconds');
+					index = _.sortBy(index, 'index').reverse();
 					done();
 				});
 			});
@@ -162,16 +145,16 @@ describe('binStringSearch', () => {
 				let matchedSentences = digestor.find(term, index);
 				var endTime = new Date().getTime();
 				// console.log('War and Peace index: ', index.slice(0, 6));
-				// console.log('sentences with ' + term + ' in it', _words(matchedSentences, 10));
+				//	console.log('sentences with ' + term + ' in ' + file + ' with string find ', _words(matchedSentences));
 				const indexTime = endTime - time;
-				console.log('time to search ' + file + ':', indexTime);
+				//console.log('time to search ' + file + ':', indexTime);
 
 				time = new Date().getTime();
 				var matchedSentencesNoIndex = digestor.findWithoutIndex(term, index);
 				endTime = new Date();
 				const noIndexTime = endTime - time;
-				// console.log('sentences with ' + term + ' in it ', _words(matchedSentencesNoIndex, 10));
-				console.log('time to search ' + file + 'without indexing:', noIndexTime);
+				//	console.log('sentences with ' + term + ' in ' + file + ' without indexing ', _words(matchedSentencesNoIndex));
+				//console.log('time to search ' + file + 'without indexing:', noIndexTime);
 
 				expect(matchedSentences).to.deep.equal(matchedSentencesNoIndex);
 				expect(indexTime).to.be.below(noIndexTime);
@@ -179,118 +162,75 @@ describe('binStringSearch', () => {
 			;
 		});
 
-		describe('.phraseToNums', () => {
-			it('should give you an index of unique patterns', () => {
-				expect(digestor.phraseToNums('a long time')).to.deep.equal([10304, 545040]);
-			});
-		});
-
-		describe('.index (phrases)', () => {
-			const phrases = [
-				'this is a sentence',
-				'this has a "lot" of words',
-				'A lot of things are good, but a lot of "things" are bad too',
-				'lot a things are good'
-			];
-			const term = 'a lot';
-			let index = [];
-			before(() => {
-				index = digestor.index(phrases, {phrase: true});
-			});
-
-			it('should index ' + term, () => {
-				expect(index).to.deep.equal(
-						[{
-							"item": "this has a \"lot\" of words",
-							"word": " this has a lot of words ",
-							"order": 1,
-							"index": [32, 262273, 526336, 803200, 4587528],
-							"maxIndex": 4587528
-						}, {
-							"item": "A lot of things are good, but a lot of \"things\" are bad too",
-							"word": " a lot of things are good but a lot of things are bad too ",
-							"order": 2,
-							"index": [11, 32, 72, 131089, 524288, 526336, 811456, 1572866],
-							"maxIndex": 1572866
-						}, {
-							"item": "lot a things are good",
-							"word": " lot a things are good ",
-							"order": 3,
-							"index": [72, 131089, 526336, 811456],
-							"maxIndex": 811456
-						}, {
-							"item": "this is a sentence",
-							"word": " this is a sentence ",
-							"order": 0,
-							"index": [278784, 794644, 803200],
-							"maxIndex": 803200
-						}]
-				);
-			});
-
-			it('should find ' + term, () => {
-				let hits = digestor.findPhrase(term, index);
-				expect(hits).to.deep.equal(
-						[{
-							"item": "this has a \"lot\" of words",
-							"word": " this has a lot of words ",
-							"order": 1,
-							"index": [32, 262273, 526336, 803200, 4587528],
-							"maxIndex": 4587528
-						}, {
-							"item": "A lot of things are good, but a lot of \"things\" are bad too",
-							"word": " a lot of things are good but a lot of things are bad too ",
-							"order": 2,
-							"index": [11, 32, 72, 131089, 524288, 526336, 811456, 1572866],
-							"maxIndex": 1572866
-						}]
-				);
-			});
-		});
-
 		describe('.find Large File -- phrases', () => {
-			var index;
-			const term = 'a young man';
+			let stringIndex;
+			const term = 'the first';
 			const file = __dirname + '/../greatExpectations.txt';
 
 			before(function (done) {
 				this.timeout(10000000);
 				var s = new Date().getTime();
-				index = [];
+				stringIndex = [];
 				var stream = fs.createReadStream(file);
 
 				stream.on('data', (data) => {
-					let sentences = data.toString().split(/[\.,]/g);
-					let partIndex = digestor.index(sentences, {phrase: false});
-					index = index.concat(partIndex);
-					// console.log('indexed part of War and Peace', index.slice(0, 4));
+					let sentences = data.toString().toLowerCase().split(/[\.,]/g).map(sentence => sentence.replace(/[\W]+/g, ' '));
+					stringIndex = stringIndex.concat(digestor.index(sentences));
 				});
 
 				stream.on('end', () => {
 					var t = new Date().getTime() - s;
-					// console.log('indexed War and Peace in ', t / 1000, 'seconds');
+					// console.log('indexed ' + file + ' for strings in ', t / 1000, 'seconds');
+					stringIndex = _.sortBy(stringIndex, 'index').reverse();
 					done();
 				});
 			});
 
-			it('finds the ' + term + ' in ' + file, function () {
-				this.timeout(10000000);
-				var time = new Date().getTime();
-				let matchedSentences = digestor.find(term, index);
-				var endTime = new Date().getTime();
-				//console.log('sentences in ' + file + 'with ' + term + ' in it', _words(matchedSentences, 10));
-				const indexTime = endTime - time;
-				console.log('time to search ' + file + 'for ' + term + ':', indexTime / 1000, 'seconds');
+			let matchedSentencesUsingStringSearch;
+			let stringIndexTime = 0;
 
-				time = new Date().getTime();
-				var matchedSentencesNoIndex = digestor.findWithoutIndex(term, index);
-				endTime = new Date();
-				const noIndexTime = endTime - time;
+			before(function () {
+				// search 2: using string match algorithm
+
+				let time = new Date().getTime();
+				matchedSentencesUsingStringSearch = digestor.find(term, stringIndex);
+				let endTime = new Date().getTime();
+				// console.log('sentences in ' + file + 'with ' + term + ' in it', _words(matchedSentences, 10));
+				stringIndexTime = endTime - time;
+				console.log('time to search ' + file + ' for ' + term + ' using string search:', stringIndexTime / 1000, 'seconds');
+			});
+
+			let noIndexTime;
+			let matchedSentencesNoIndex;
+
+			before(function () {
+				// search 3: using brute force search
+				const time = new Date().getTime();
+				matchedSentencesNoIndex = digestor.findWithoutIndex(term, stringIndex);
+				const endTime = new Date();
+				noIndexTime = endTime - time;
 				// console.log('sentences with ' + term + ' in it (no index) ', _words(matchedSentencesNoIndex, 10));
 				console.log('time to search ' + file + ' for ' + term + 'without indexing:', noIndexTime / 1000, 'seconds');
+			});
 
-				expect(matchedSentences).to.deep.equal(matchedSentencesNoIndex);
-				expect(indexTime).to.be.below(noIndexTime);
+			it('should have string index in descending index order ', function () {
+				var last = null;
+
+				for (let item in stringIndex) {
+					var v = item.index;
+					if (last && last !== v) {
+						expect(v).to.be.below(last);
+					}
+					last = v;
+				}
+			});
+
+			it('hits from finding ' + term + ' in ' + file + ' using string search should equal unindexed search hits', function () {
+				expect(_.map(matchedSentencesUsingStringSearch, 'item')).to.deep.equal(_.map(matchedSentencesNoIndex, 'item'));
+			});
+
+			it('should be faster searching with strings than with no index', function () {
+				expect(stringIndexTime).to.be.below(noIndexTime);
 			});
 		});
 	});
