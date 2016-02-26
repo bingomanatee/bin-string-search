@@ -78,14 +78,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	var _ = __webpack_require__(2);
 	
 	var phrasiphy = function phrasiphy(pString) {
-		return _.compact(pString.split(/[\W]+/g)).join(' ');
+		return _.compact(pString.toLowerCase().split(/[\W]+/g)).join(' ');
 	};
 	
 	var StringDigestor = function () {
-		function StringDigestor(config) {
+		function StringDigestor(config, minWordInPhrase) {
 			_classCallCheck(this, StringDigestor);
 	
 			this.codes = 'abcdefghijklmnipqrstuvwxyz'.split('').concat(config || DEFAULT_CONFIG).slice(0, 32);
+			this.minWordInPhrase = minWordInPhrase || 2;
 		}
 	
 		_createClass(StringDigestor, [{
@@ -100,55 +101,13 @@ return /******/ (function(modules) { // webpackBootstrap
 							matches.push(index[i]);
 						}
 					}
+					if (index[i].index < key) {
+						break;
+					}
 				}
 				return _.sortBy(matches, function (i) {
 					return i.order;
 				});
-			}
-	
-			/**
-	   * note - word by word indexing SLOWER than text search.
-	   *
-	   * @param pString
-	   * @param index
-	   * @returns {*}
-	   */
-	
-		}, {
-			key: 'findPhrase',
-			value: function findPhrase(pString, index) {
-				var keys = this.phraseToNums(pString);
-				var lastKey = _.last(keys);
-				var firstKey = _.first(keys);
-	
-				var simplePhrase = ' ' + phrasiphy(pString) + ' ';
-	
-				var matches = [];
-				for (var i = 0; i < index.length; ++i) {
-					var item = index[i];
-					if (item.maxIndex < lastKey) {
-						console.log('max key too small for item ', item);
-						break;
-					}
-					if (index[i].word.indexOf(simplePhrase) !== -1) {
-						matches.push(index[i]);
-					}
-				}
-				return _.sortBy(matches, function (item) {
-					return item.order;
-				});
-			}
-		}, {
-			key: 'findPhraseWithoutIndex',
-			value: function findPhraseWithoutIndex(pString, index) {
-				var simplePhrase = ' ' + phrasiphy(pString) + ' ';
-				return index.filter(function (item) {
-					if (item.word.indexOf(simplePhrase) !== -1) {
-						return true;
-					} else {
-						return false;
-					}
-				}, []);
 			}
 		}, {
 			key: 'findWithoutIndex',
@@ -161,19 +120,6 @@ return /******/ (function(modules) { // webpackBootstrap
 					}
 					return false;
 				}, []), 'order');
-			}
-		}, {
-			key: 'phraseToNums',
-			value: function phraseToNums(pText) {
-				var _this = this;
-	
-				var words = phrasiphy(pText).split(' ').filter(function (w) {
-					return w.length > 1;
-				});
-				var indexes = words.map(function (word) {
-					return _this.strToNum(word);
-				});
-				return _(indexes).uniq().sortBy(_.identity).value();
 			}
 		}, {
 			key: 'strToNum',
@@ -232,37 +178,21 @@ return /******/ (function(modules) { // webpackBootstrap
 		}, {
 			key: 'index',
 			value: function index(data, pParams) {
-				var _this2 = this;
+				var _this = this;
 	
 				var params = pParams || {};
 				var phraseIndex = params.phrase;
 				var dataToString = params.dataToString || _.identity;
-	
-				/*     return _.sortBy(data.map((item, order) => {
-	    let word = dataToString(item).toLowerCase();
-	    var itemIndex = phraseIndex ? this.phraseToNums(word) : this.strToNum(word);
-	    var out = {
-	    item: item,
-	    word: phraseIndex ? ` ${phrasiphy(word)} ` : word,
-	    order: order,
-	    index: itemIndex
-	    };
-	    if (phraseIndex) {
-	    out.maxIndex = _.max(itemIndex);
-	    }
-	    return out;
-	    }), (item) => phraseIndex ? item.maxIndex : item.index).reverse();*/
-	
 				var out = _(data).reduce(function (goodItems, item, i) {
 					var word = dataToString(item);
 					if (_.trim(word).length) {
 						var index = undefined;
 	
 						if (phraseIndex) {
-							word = ' ' + word + ' ';
-							index = _this2.phraseToNums(word);
+							word = ' ' + phrasiphy(word) + ' ';
+							index = _this.phraseToNums(word);
 						} else {
-							index = _this2.strToNum(word);
+							index = _this.strToNum(word);
 						}
 	
 						var summary = {
@@ -273,6 +203,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 						if (phraseIndex) {
 							summary.maxIndex = _.max(index);
+							summary.minIndex = _.min(index);
+							summary.index = index.reduce(function (m, w) {
+								return m[w] = true;
+							}, {});
 						}
 	
 						goodItems.push(summary);
